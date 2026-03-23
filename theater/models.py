@@ -15,25 +15,22 @@ class Genre(models.Model):
 
 
 class Actor(models.Model):
-    first_name = models.CharField(max_lenght=255, unique=False)
-    last_name = models.CharField(max_lenght=255, unique=False)
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
 
 class Play(models.Model):
-    title = models.CharField(max_lenght=255, unique=True)
+    title = models.CharField(max_length=255, unique=True)
     description = models.TextField()
     actors = models.ManyToManyField(Actor)
     genres = models.ManyToManyField(Genre)
 
-
     def __str__(self):
-        return f"{self.title},
-                {self.description},
-                {self.genres},
-                {self.actors}"
+        return self.title
+
 
 class Reservation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -47,29 +44,32 @@ class Reservation(models.Model):
         return f"Reservation by {self.user.username} at {self.created_at}"
 
 
-class TheatereHall(models.Model):
-    name = models.CharField(max_lenght=255, unique=True)
+class TheatreHall(models.Model):
+    name = models.CharField(max_length=255, unique=True)
     rows = models.IntegerField()
     seats_in_row = models.IntegerField()
 
     def __str__(self):
-        return f"{self.name},seats in Hall {self.rows * self.seats_in_row}"
+        return f"{self.name} (Seats: {self.rows * self.seats_in_row})"
 
 
 class Performance(models.Model):
-    play = models.ManyToOneRel(Play)
-    theatre_hall = models.ManyToOneRel(TheatereHall)
+    play = models.ForeignKey(Play, on_delete=models.CASCADE)
+    theatre_hall = models.ForeignKey(TheatreHall, on_delete=models.CASCADE)
     show_time = models.DateTimeField()
 
-
     def __str__(self):
-        return f"{self.play}, {self.theatre_hall}, {self.show_time}"
+        return f"{self.play.title} at {self.theatre_hall.name} - {self.show_time}"
+
 
 class Ticket(models.Model):
-    raw = models.IntegerField()
+    row = models.IntegerField()
     seat = models.IntegerField()
-    performance = models.ManyToOneRel(Performance)
-    reservation = models.ManyToOneRel(Reservation)
+    performance = models.ForeignKey(Performance, on_delete=models.CASCADE, related_name="tickets")
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, related_name="tickets")
+
+    class Meta:
+        unique_together = ("performance", "row", "seat")
 
     def __str__(self):
-        return f"{self.performance}, {self.reservation}, {self.raw}, {self.seat}"
+        return f"Ticket for {self.performance}: Row {self.row}, Seat {self.seat}"
