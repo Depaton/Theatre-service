@@ -8,7 +8,9 @@ from theater.views import (
    PlayViewSet,
    PerformanceViewSet,
    ReservationViewSet,
-   TicketViewSet
+   TicketViewSet,
+   CreateUserView,
+   ManageUserView
 )
 
 router = routers.DefaultRouter()
@@ -20,6 +22,10 @@ router.register("performances", PerformanceViewSet)
 router.register("reservations", ReservationViewSet)
 router.register("tickets", TicketViewSet)
 
-urlpatterns = [path("", include(router.urls))]
+urlpatterns = [
+    path("", include(router.urls)),
+    path("register/", CreateUserView.as_view(), name="create"),
+    path("me/", ManageUserView.as_view(), name="manage"),
+]
 
 app_name = "theatre"
