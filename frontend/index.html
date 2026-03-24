@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Театральна каса — елегантний сервіс продажу квитків на вистави. Бронюйте найкращі місця просто зараз.">
+    <title>Театральна Каса — Квитки на Вистави</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo" id="nav-logo" data-page="home">
+                <span class="logo-icon">🎭</span>
+                <span class="logo-text">Театральна Каса</span>
+            </a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#" data-page="home" class="nav-link active">Афіша</a></li>
+            </ul>
+            <div class="nav-auth" id="nav-auth">
+                <!-- Dynamic auth buttons -->
+            </div>
+            <button class="nav-hamburger" id="nav-hamburger" aria-label="Меню">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ===== AUTH MODAL ===== -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-card">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <h2 class="modal-title" id="modal-title">Вхід</h2>
+            <form id="auth-form" autocomplete="off">
+                <div class="form-group" id="username-group">
+                    <label for="auth-username">Ім'я користувача</label>
+                    <input type="text" id="auth-username" placeholder="username" required>
+                </div>
+                <div class="form-group" id="email-group" style="display:none;">
+                    <label for="auth-email">Email</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="auth-password">Пароль</label>
+                    <input type="password" id="auth-password" placeholder="••••••" required minlength="5">
+                </div>
+                <div class="form-group" id="password-repeat-group" style="display:none;">
+                    <label for="auth-password-repeat">Повторіть пароль</label>
+                    <input type="password" id="auth-password-repeat" placeholder="••••••" minlength="5">
+                </div>
+                <p class="form-error" id="form-error"></p>
+                <button type="submit" class="btn btn-primary btn-full" id="auth-submit">Увійти</button>
+            </form>
+            <p class="modal-switch" id="modal-switch">
+                Немає акаунту? <a href="#" id="switch-auth">Зареєструватися</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- ===== PAGE: HOME (Performances) ===== -->
+    <main class="page active" id="page-home">
+        <header class="hero" id="hero">
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h1 class="hero-title">Відкрийте Магію Театру</h1>
+                <p class="hero-subtitle">Оберіть виставу, знайдіть ідеальне місце та зануртеся у мистецтво</p>
+            </div>
+        </header>
+
+        <section class="section" id="performances-section">
+            <h2 class="section-title">Найближчі Вистави</h2>
+            <div class="performance-grid" id="performance-grid">
+                <!-- Dynamically loaded performance cards -->
+                <div class="loading-spinner" id="perf-loader">
+                    <div class="spinner"></div>
+                    <p>Завантаження афіші...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== PAGE: PERFORMANCE DETAIL ===== -->
+    <main class="page" id="page-detail">
+        <div class="detail-hero" id="detail-hero">
+            <div class="detail-overlay"></div>
+            <div class="detail-content">
+                <a href="#" class="back-link" id="back-link">← Назад до афіші</a>
+                <h1 class="detail-title" id="detail-title"></h1>
+                <p class="detail-meta" id="detail-meta"></p>
+            </div>
+        </div>
+
+        <section class="section detail-body">
+            <div class="detail-grid">
+                <div class="detail-info">
+                    <h3>Опис</h3>
+                    <p id="detail-description"></p>
+                    <h3>Жанри</h3>
+                    <div id="detail-genres" class="tag-list"></div>
+                    <h3>Актори</h3>
+                    <div id="detail-actors" class="tag-list"></div>
+                </div>
+                <div class="detail-booking">
+                    <div class="booking-card" id="booking-card">
+                        <h3>Оберіть Місця</h3>
+                        <div class="stage-label">🎭 СЦЕНА</div>
+                        <div class="seat-grid" id="seat-grid">
+                            <!-- Dynamic seat map -->
+                        </div>
+                        <div class="seat-legend">
+                            <span class="legend-item"><span class="seat-dot available"></span> Вільне</span>
+                            <span class="legend-item"><span class="seat-dot selected"></span> Обране</span>
+                            <span class="legend-item"><span class="seat-dot taken"></span> Зайняте</span>
+                        </div>
+                        <div class="booking-summary" id="booking-summary" style="display:none;">
+                            <p>Обрано: <strong id="selected-count">0</strong> місць</p>
+                            <button class="btn btn-primary btn-full" id="book-btn">Забронювати</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== PAGE: MY TICKETS ===== -->
+    <main class="page" id="page-my-tickets">
+        <section class="section">
+            <h2 class="section-title">Мої Бронювання</h2>
+            <div id="my-reservations"></div>
+        </section>
+    </main>
+
+    <!-- ===== PAGE: ADMIN PANEL ===== -->
+    <main class="page" id="page-admin">
+        <section class="section">
+            <div class="admin-header">
+                <h2 class="section-title">Панель Адміністратора</h2>
+                <button class="btn btn-primary btn-sm" id="admin-add-btn">+ Додати новий запис</button>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="performances">Вистави (Афіша)</button>
+                <button class="admin-tab" data-tab="plays">Вихідні п'єси</button>
+                <button class="admin-tab" data-tab="halls">Зали</button>
+                <button class="admin-tab" data-tab="actors">Актори</button>
+                <button class="admin-tab" data-tab="genres">Жанри</button>
+            </div>
+
+            <div class="admin-table-container">
+                <table class="admin-table" id="admin-table">
+                    <thead><tr id="admin-table-head"></tr></thead>
+                    <tbody id="admin-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== ADMIN EDIT MODAL ===== -->
+    <div class="modal-overlay" id="admin-modal">
+        <div class="modal-card">
+            <button class="modal-close" id="admin-modal-close">&times;</button>
+            <h2 class="modal-title" id="admin-modal-title">Редагування</h2>
+            <form id="admin-form">
+                <div id="admin-form-fields"></div>
+                <p class="form-error" id="admin-form-error"></p>
+                <button type="submit" class="btn btn-primary btn-full">Зберегти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRM MODAL ===== -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-card modal-confirm">
+            <h2 class="modal-title">Підтвердження</h2>
+            <p id="confirm-text">Ви впевнені, що хочете видалити цей запис?</p>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-ghost" id="confirm-cancel">Скасувати</button>
+                <button type="button" class="btn btn-primary btn-danger" id="confirm-ok">Видалити</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <footer class="footer">
+        <p>© 2026 Театральна Каса. Усі права захищено.</p>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

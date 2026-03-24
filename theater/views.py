@@ -1,4 +1,6 @@
 from rest_framework import viewsets, generics
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .permissions import IsAdminOrReadOnly
 from .models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
@@ -44,6 +46,12 @@ class PerformanceViewSet(viewsets.ModelViewSet):
     queryset = Performance.objects.all()
     serializer_class = PerformanceSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny], url_path='taken-seats')
+    def taken_seats(self, request, pk=None):
+        """Return all taken row/seat pairs for this performance."""
+        tickets = Ticket.objects.filter(performance_id=pk).values_list('row', 'seat')
+        return Response([{'row': r, 'seat': s} for r, s in tickets])
 
 class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.all()
