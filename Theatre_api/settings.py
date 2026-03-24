@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'theater',
 ]
 
@@ -27,7 +28,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'ceatre_api.urls'
+ROOT_URLCONF = 'Theatre_api.urls'
 
 TEMPLATES = [
     {
@@ -45,7 +46,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'ceatre_api.wsgi.application'
+WSGI_APPLICATION = 'Theatre_api.wsgi.application'
 
 DATABASES = {
     'default': {
