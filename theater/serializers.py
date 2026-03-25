@@ -36,7 +36,8 @@ class ActorSerializer(serializers.ModelSerializer):
 class TheatreHallSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreHall
-        fields = ("id", "name", "rows", "seats_in_row")
+        fields = ("id", "name", "rows", "seats_in_row", "seats_config")
+        read_only_fields = ("seats_config",)
 
 class PlaySerializer(serializers.ModelSerializer):
     class Meta:
@@ -44,9 +45,12 @@ class PlaySerializer(serializers.ModelSerializer):
         fields = ("id", "title", "description", "image", "actors", "genres")
 
 class PerformanceSerializer(serializers.ModelSerializer):
+    tickets_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Performance
-        fields = ("id", "play", "theatre_hall", "show_time")
+        fields = ("id", "play", "theatre_hall", "show_time", "tickets_count")
+        read_only_fields = ("tickets_count",)
 
 class TicketSerializer(serializers.ModelSerializer):
     class Meta:

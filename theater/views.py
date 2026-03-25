@@ -42,8 +42,10 @@ class PlayViewSet(viewsets.ModelViewSet):
     serializer_class = PlaySerializer
     permission_classes = [IsAdminOrReadOnly]
 
+from django.db.models import Count
+# ...
 class PerformanceViewSet(viewsets.ModelViewSet):
-    queryset = Performance.objects.all()
+    queryset = Performance.objects.all().annotate(tickets_count=Count('tickets'))
     serializer_class = PerformanceSerializer
     permission_classes = [IsAdminOrReadOnly]
 
@@ -71,3 +73,10 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Ticket.objects.filter(reservation__user=self.request.user)
+
+    def perform_destroy(self, instance):
+        reservation = instance.reservation
+        instance.delete()
+        # If this was the last ticket in the reservation, delete the reservation too
+        if reservation.tickets.count() == 0:
+            reservation.delete()

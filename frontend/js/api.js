@@ -179,6 +179,13 @@ const api = {
         });
     },
 
+    async createTicket(row, seat, performance, reservation) {
+        return this.requestAuth('/tickets/', {
+            method: 'POST',
+            body: JSON.stringify({ row, seat, performance, reservation }),
+        });
+    },
+
     // --- Tickets ---
     async getTickets() {
         return this.requestAuth('/tickets/');

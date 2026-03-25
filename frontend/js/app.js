@@ -14,6 +14,11 @@ const state = {
     takenSeats: [],
     adminTab: 'performances',
     adminEditingId: null,
+    filters: {
+        text: '',
+        date: '',
+        genre: ''
+    }
 };
 
 // ===== DOM Elements =====
@@ -61,7 +66,7 @@ function showToast(message, type = 'info') {
 }
 
 // ===== Navigation =====
-function showPage(pageId) {
+function showPage(pageId, updateHash = true) {
     $$('.page').forEach(p => p.classList.remove('active'));
     const page = $(`#page-${pageId}`);
     if (page) page.classList.add('active');
@@ -69,8 +74,21 @@ function showPage(pageId) {
     $$('.nav-link').forEach(l => l.classList.remove('active'));
     $$(`.nav-link[data-page="${pageId}"]`).forEach(l => l.classList.add('active'));
 
+    if (updateHash) {
+        location.hash = pageId;
+    }
+
+    if (pageId === 'my-tickets') loadMyReservations();
+    if (pageId === 'admin') loadAdminTab(state.adminTab);
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// Handle browser Back/Forward or Hash changes
+window.addEventListener('hashchange', () => {
+    const page = location.hash.replace('#', '') || 'home';
+    showPage(page, false);
+});
 
 // ===== Auth UI =====
 let isRegisterMode = false;
@@ -104,7 +122,6 @@ function updateAuthUI() {
             e.preventDefault();
             $('#dropdown-menu').classList.remove('open');
             showPage('my-tickets');
-            loadMyReservations();
         });
         $('#menu-profile').addEventListener('click', (e) => {
             e.preventDefault();
@@ -115,7 +132,6 @@ function updateAuthUI() {
             e.preventDefault();
             $('#dropdown-menu').classList.remove('open');
             showPage('admin');
-            loadAdminTab(state.adminTab);
         });
         $('#menu-logout').addEventListener('click', (e) => {
             e.preventDefault();
@@ -148,7 +164,7 @@ function openProfileModal() {
     $('#modal-title').textContent = 'Налаштування Профілю';
     $('#email-group').style.display = 'block';
     $('#username-group').style.display = 'block';
-    $('#password-repeat-group').style.display = 'none';
+    $('#password-repeat-group').style.display = 'block';
     $('#auth-username').value = user.username || '';
     $('#auth-email').value = user.email || '';
     $('#auth-password').value = '';
@@ -226,7 +242,15 @@ async function loadAllData() {
         hallList.forEach(h => state.halls[h.id] = h);
         genreList.forEach(g => state.genres[g.id] = g);
         actorList.forEach(a => state.actors[a.id] = a);
+ 
+        // Populate search dropdowns
+        const genreSelect = $('#search-genre');
+        if (genreSelect) {
+            genreSelect.innerHTML = '<option value="">Усі жанри</option>' + 
+                genreList.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+        }
 
+        initSearch();
         renderPerformances();
     } catch (err) {
         console.error('Load data error:', err);
@@ -243,25 +267,46 @@ async function loadAllData() {
 // ===== Render Performances =====
 function renderPerformances() {
     const grid = $('#performance-grid');
+    
+    // Filtering logic
+    const filtered = state.performances.filter(perf => {
+        const play = state.plays[perf.play] || {};
+        const matchesText = !state.filters.text || 
+            play.title?.toLowerCase().includes(state.filters.text.toLowerCase()) || 
+            (play.actors || []).some(aId => {
+                const actor = state.actors[aId];
+                return actor && (actor.first_name + ' ' + actor.last_name).toLowerCase().includes(state.filters.text.toLowerCase());
+            });
+            
+        const matchesDate = !state.filters.date || perf.show_time.startsWith(state.filters.date);
+        
+        const matchesGenre = !state.filters.genre || (play.genres || []).includes(parseInt(state.filters.genre));
 
-    if (state.performances.length === 0) {
+        return matchesText && matchesDate && matchesGenre;
+    });
+
+    if (filtered.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">🎭</div>
-                <p>Наразі немає запланованих вистав</p>
+                <div class="empty-state-icon">🔎</div>
+                <p>Нічого не знайдено за вашим запитом</p>
+                <button class="btn btn-outline btn-sm" onclick="clearFilters()">Скинути пошук</button>
             </div>
         `;
         return;
     }
 
-    grid.innerHTML = state.performances.map((perf, i) => {
+    grid.innerHTML = filtered.map((perf, i) => {
         const play = state.plays[perf.play] || {};
         const hall = state.halls[perf.theatre_hall] || {};
         const gradient = cardGradients[i % cardGradients.length];
         const icon = theatreIcons[i % theatreIcons.length];
-        const totalSeats = (hall.rows || 0) * (hall.seats_in_row || 0);
+        const totalSeats = (hall.seats_config || []).reduce((a, b) => a + b, 0);
 
         const playImage = play.image ? `<img src="${play.image}" alt="${play.title}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">` : `<span style="font-size: 3.5rem; position: relative; z-index: 1; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));">${icon}</span>`;
+
+        const tickets_taken = perf.tickets_count || 0;
+        const remaining = totalSeats - tickets_taken;
 
         return `
             <div class="perf-card" data-perf-id="${perf.id}" style="animation-delay: ${i * 0.08}s">
@@ -274,8 +319,13 @@ function renderPerformances() {
                     <p class="perf-card-date">📅 ${formatDate(perf.show_time)}</p>
                 </div>
                 <div class="perf-card-footer">
-                    <span class="perf-card-seats">💺 ${totalSeats} місць</span>
-                    <span class="btn btn-primary btn-sm">Обрати місця →</span>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <span class="perf-card-seats" style="margin-left:0;">💺 ${totalSeats} місць</span>
+                        <span style="font-size:0.75rem; color:${remaining > 0 ? 'var(--accent)' : '#e74c3c'}; font-weight:600;">
+                            ${remaining > 0 ? `🔥 Залишилось: ${remaining}` : '⛔ Місць немає'}
+                        </span>
+                    </div>
+                    <span class="btn ${remaining > 0 ? 'btn-primary' : 'btn-ghost'} btn-sm">${remaining > 0 ? 'Обрати місця →' : 'Переглянути'}</span>
                 </div>
             </div>
         `;
@@ -334,14 +384,17 @@ async function openPerformanceDetail(perfId) {
     }
 
     // Build seat grid
-    buildSeatGrid(hall.rows || 5, hall.seats_in_row || 10);
+    buildSeatGrid(hall.rows || 5, hall.seats_config || []);
 
     showPage('detail');
 }
 
-function buildSeatGrid(rows, seatsPerRow) {
+function buildSeatGrid(rows, seatsConfig) {
     const grid = $('#seat-grid');
     grid.innerHTML = '';
+
+    // If seatsConfig is not an array or empty, try to fallback (should not happen with new API)
+    const isConfigArray = Array.isArray(seatsConfig) && seatsConfig.length > 0;
 
     for (let r = 1; r <= rows; r++) {
         const rowDiv = document.createElement('div');
@@ -352,7 +405,9 @@ function buildSeatGrid(rows, seatsPerRow) {
         label.textContent = r;
         rowDiv.appendChild(label);
 
-        for (let s = 1; s <= seatsPerRow; s++) {
+        const currentSeatsInRow = isConfigArray ? (seatsConfig[r - 1] || 0) : 0;
+
+        for (let s = 1; s <= currentSeatsInRow; s++) {
             const seatEl = document.createElement('div');
             seatEl.className = 'seat';
             seatEl.dataset.row = r;
@@ -405,6 +460,43 @@ function updateBookingSummary() {
     } else {
         summary.style.display = 'none';
     }
+}
+
+// ===== Search & Filtering =====
+function initSearch() {
+    const textInput = $('#search-text');
+    const dateInput = $('#search-date');
+    const genreSelect = $('#search-genre');
+    const clearBtn = $('#search-clear');
+
+    if (!textInput) return;
+
+    textInput.addEventListener('input', (e) => {
+        state.filters.text = e.target.value;
+        renderPerformances();
+    });
+
+    dateInput.addEventListener('change', (e) => {
+        state.filters.date = e.target.value;
+        renderPerformances();
+    });
+
+    genreSelect.addEventListener('change', (e) => {
+        state.filters.genre = e.target.value;
+        renderPerformances();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        clearFilters();
+    });
+}
+
+function clearFilters() {
+    state.filters = { text: '', date: '', genre: '' };
+    $('#search-text').value = '';
+    $('#search-date').value = '';
+    $('#search-genre').value = '';
+    renderPerformances();
 }
 
 // ===== Booking =====
@@ -465,16 +557,22 @@ async function loadMyReservations() {
         return;
     }
 
-    container.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <p>Завантаження бронювань...</p>
-        </div>
-    `;
+    // If it's the first load (empty container), show spinner. Otherwise update "quietly"
+    if (!container.innerHTML.trim()) {
+        container.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Завантаження бронювань...</p>
+            </div>
+        `;
+    }
 
     try {
         const reservations = await api.getReservations();
-        const resList = Array.isArray(reservations) ? reservations : reservations.results || [];
+        const rawResList = Array.isArray(reservations) ? reservations : reservations.results || [];
+        
+        // Filter out reservations that have no tickets to avoid showing "empty fields"
+        const resList = rawResList.filter(res => res.tickets && res.tickets.length > 0);
 
         if (resList.length === 0) {
             container.innerHTML = `
@@ -500,7 +598,7 @@ async function loadMyReservations() {
                         <div class="ticket-details">
                             <div class="ticket-header">
                                 <strong>${play?.title || 'Вистава'} — ${hall?.name || 'Зал'}</strong>
-                                <span class="btn-cancel-ticket" onclick="handleCancelTicket(event, ${t.id})">Скасувати</span>
+                                <span class="btn-cancel-ticket" data-id="${t.id}">Скасувати</span>
                             </div>
                             <span>Ряд ${t.row}, Місце ${t.seat}${perf ? ' · ' + formatDate(perf.show_time) : ''}</span>
                         </div>
@@ -514,13 +612,32 @@ async function loadMyReservations() {
                         <span class="reservation-id">Бронювання #${res.id}</span>
                         <div style="display:flex; gap:10px; align-items:center;">
                            <span class="reservation-date">${formatDate(res.created_at)}</span>
-                           <span class="btn btn-outline btn-sm" style="color:#e74c3c; border-color:rgba(231,76,60,0.3);" onclick="handleCancelReservation(event, ${res.id})">Скасувати все</span>
+                           <span class="btn btn-outline btn-sm btn-cancel-res" style="color:#e74c3c; border-color:rgba(231,76,60,0.3);" data-id="${res.id}">Скасувати все</span>
                         </div>
                     </div>
                     ${ticketsHtml || '<p style="color: var(--text-muted); font-size: 0.85rem;">Квитків немає</p>'}
                 </div>
             `;
         }).join('');
+
+        // Use a flag to avoid multiple listeners
+        if (!container.dataset.ready) {
+            container.addEventListener('click', (e) => {
+                const ticketBtn = e.target.closest('.btn-cancel-ticket');
+                const resBtn = e.target.closest('.btn-cancel-res');
+                if (ticketBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCancelTicket(e, parseInt(ticketBtn.dataset.id));
+                } else if (resBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCancelReservation(e, parseInt(resBtn.dataset.id));
+                }
+            });
+            container.dataset.ready = 'true';
+        }
+
     } catch (err) {
         console.error('Load reservations error:', err);
         container.innerHTML = `<div class="empty-state"><p>Не вдалося завантажити бронювання</p></div>`;
@@ -536,7 +653,9 @@ async function handleCancelTicket(e, id) {
         try {
             await api.deleteTicket(id);
             showToast('Квиток скасовано', 'success');
-            loadMyReservations();
+            await loadMyReservations();
+            // Force staying on the tickets page
+            showPage('my-tickets');
         } catch (err) {
             showToast(err.message, 'error');
         }
@@ -552,7 +671,9 @@ async function handleCancelReservation(e, id) {
         try {
             await api.deleteReservation(id);
             showToast('Бронювання видалено', 'success');
-            loadMyReservations();
+            await loadMyReservations();
+            // Force staying on the tickets page
+            showPage('my-tickets');
         } catch (err) {
             showToast(err.message, 'error');
         }
@@ -565,11 +686,11 @@ const adminMeta = {
         endpoint: '/performances/',
         title: 'Вистави (Афіша)',
         fields: [
-            { name: 'play', label: 'П\'єса (ID)', type: 'number' },
-            { name: 'theatre_hall', label: 'Зал (ID)', type: 'number' },
-            { name: 'show_time', label: 'Час (ISO)', type: 'datetime-local' }
+            { name: 'play', label: 'П\'єса (Пошук)', type: 'select', items: 'plays', labelKey: 'title' },
+            { name: 'theatre_hall', label: 'Театральний Зал', type: 'select', items: 'halls', labelKey: 'name' },
+            { name: 'show_time', label: 'Дата та час', type: 'datetime-local' }
         ],
-        columns: ['ID', 'П\'єса', 'Зал', 'Час']
+        columns: ['ID', 'П\'єса', 'Зал', 'Час', 'Продано']
     },
     plays: {
         endpoint: '/plays/',
@@ -587,7 +708,7 @@ const adminMeta = {
         fields: [
             { name: 'name', label: 'Назва', type: 'text' },
             { name: 'rows', label: 'Ряди', type: 'number' },
-            { name: 'seats_in_row', label: 'Місць у ряду', type: 'number' }
+            { name: 'seats_in_row', label: 'Місць у ряду (напр. 10 або 10,12,12)', type: 'text' }
         ],
         columns: ['ID', 'Назва', 'Ряди', 'Місця']
     },
@@ -626,15 +747,26 @@ async function loadAdminTab(tabName) {
                     if (f.name === 'play') val = state.plays[val]?.title || val;
                     if (f.name === 'theatre_hall') val = state.halls[val]?.name || val;
                 }
+                if (tabName === 'halls' && f.name === 'seats_in_row') {
+                    val = (item.seats_config || []).reduce((a, b) => a + b, 0);
+                }
                 if (f.type === 'datetime-local') val = new Date(val).toLocaleString();
+                if (f.name === 'play' && tabName === 'performances') {
+                    // special handling for play cell if it's already set to play object
+                }
                 return `<td>${val || '-'}</td>`;
             });
             const idCell = `<td>${item.id}</td>`;
+            let extraCols = '';
+            if (tabName === 'performances') {
+                 extraCols = `<td>${item.tickets_count || 0}</td>`;
+            }
 
             return `
                 <tr>
                     ${idCell}
-                    ${cells.slice(0, meta.columns.length - 1).join('')}
+                    ${cells.slice(0, meta.columns.length - (extraCols ? 2 : 1)).join('')}
+                    ${extraCols}
                     <td>
                         <div class="action-btns">
                             <button class="btn-icon" onclick="openAdminModal(${item.id})">✏️</button>
@@ -661,15 +793,32 @@ async function openAdminModal(id = null) {
         } catch {}
     }
 
-    const fieldsHtml = meta.fields.map(f => `
-        <div class="form-group">
-            <label>${f.label}</label>
-            ${f.type === 'textarea' 
-                ? `<textarea id="admin-f-${f.name}" style="width:100%; min-height:100px; background:var(--bg-primary); border:1px solid var(--border); border-radius:4px; color:white; padding:10px;">${item[f.name] || ''}</textarea>`
-                : `<input type="${f.type}" id="admin-f-${f.name}" value="${item[f.name] || ''}">`
-            }
-        </div>
-    `).join('');
+    const fieldsHtml = meta.fields.map(f => {
+        let inputHtml = '';
+        if (f.type === 'textarea') {
+            inputHtml = `<textarea id="admin-f-${f.name}" style="width:100%; min-height:100px; background:var(--bg-primary); border:1px solid var(--border); border-radius:4px; color:white; padding:10px;">${item[f.name] || ''}</textarea>`;
+        } else if (f.type === 'select') {
+            const list = Object.values(state[f.items] || {});
+            const options = list.map(opt => `
+                <option value="${opt.id}" ${item[f.name] == opt.id ? 'selected' : ''}>
+                    ${opt[f.labelKey] || opt.id}
+                </option>
+            `).join('');
+            inputHtml = `<select id="admin-f-${f.name}" style="width:100%; padding:14px; background:var(--bg-primary); color:white; border:1px solid var(--border); border-radius:8px;">
+                <option value="">-- Оберіть ${f.label} --</option>
+                ${options}
+            </select>`;
+        } else {
+            inputHtml = `<input type="${f.type}" id="admin-f-${f.name}" value="${item[f.name] || ''}">`;
+        }
+
+        return `
+            <div class="form-group">
+                <label>${f.label}</label>
+                ${inputHtml}
+            </div>
+        `;
+    }).join('');
 
     $('#admin-form-fields').innerHTML = fieldsHtml;
     $('#admin-form-error').textContent = '';
@@ -779,7 +928,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         errorEl.textContent = '';
 
-        if (isRegisterMode && password !== passwordRepeat) {
+        const isProfileMode = modal.dataset.mode === 'profile';
+        if ((isRegisterMode || (isProfileMode && password)) && password !== passwordRepeat) {
             errorEl.textContent = 'Паролі не збігаються';
             return;
         }
@@ -854,6 +1004,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Init ---
     updateAuthUI();
     loadAllData();
+
+    // Initial routing
+    const initialPage = location.hash.replace('#', '') || 'home';
+    showPage(initialPage, false);
 });
 
 // Exposed globally for static onclick

@@ -73,6 +73,24 @@
 
         <section class="section" id="performances-section">
             <h2 class="section-title">Найближчі Вистави</h2>
+            
+            <div class="search-bar" id="search-bar">
+                <div class="search-group">
+                    <input type="text" id="search-text" placeholder="🔍 Назва або актор...">
+                </div>
+                <div class="search-group search-group-sm">
+                    <input type="date" id="search-date">
+                </div>
+                <div class="search-group search-group-sm">
+                    <select id="search-genre">
+                        <option value="">Усі жанри</option>
+                    </select>
+                </div>
+                <div class="search-actions">
+                    <button class="btn btn-outline btn-sm" id="search-clear" title="Очистити">✕</button>
+                </div>
+            </div>
+
             <div class="performance-grid" id="performance-grid">
                 <!-- Dynamically loaded performance cards -->
                 <div class="loading-spinner" id="perf-loader">
