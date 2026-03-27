@@ -38,14 +38,14 @@ class TheatreHallViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
 
 class PlayViewSet(viewsets.ModelViewSet):
-    queryset = Play.objects.all()
+    queryset = Play.objects.all().prefetch_related('actors', 'genres')
     serializer_class = PlaySerializer
     permission_classes = [IsAdminOrReadOnly]
 
 from django.db.models import Count
 # ...
 class PerformanceViewSet(viewsets.ModelViewSet):
-    queryset = Performance.objects.all().annotate(tickets_count=Count('tickets'))
+    queryset = Performance.objects.all().select_related('play', 'theatre_hall').annotate(tickets_count=Count('tickets'))
     serializer_class = PerformanceSerializer
     permission_classes = [IsAdminOrReadOnly]
 

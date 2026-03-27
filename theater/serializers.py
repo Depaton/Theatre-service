@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
@@ -53,6 +54,30 @@ class PerformanceSerializer(serializers.ModelSerializer):
         read_only_fields = ("tickets_count",)
 
 class TicketSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        """
+        Validates that the ticket's row and seat are within the hall's configuration 
+        and that the seat is not already taken.
+        """
+        # We create a temporary instance to use the model's clean() logic
+        try:
+            data = Ticket(**attrs)
+            data.full_clean() # This will call the model's clean() method
+        except ValidationError as error:
+            raise serializers.ValidationError(error.messages)
+
+        # Check if unique_together is violated manually for better error message
+        if Ticket.objects.filter(
+            performance=attrs['performance'],
+            row=attrs['row'],
+            seat=attrs['seat']
+        ).exists():
+            raise serializers.ValidationError(
+                f"Seat {attrs['seat']} in row {attrs['row']} is already taken for this performance."
+            )
+
+        return attrs
+
     class Meta:
         model = Ticket
         fields = ("id", "row", "seat", "performance", "reservation")
