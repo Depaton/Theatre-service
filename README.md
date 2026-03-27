@@ -10,6 +10,37 @@ A high-performance Theater Ticket Booking system designed for modern stage produ
 - **Media Management**: Integrated support for actor photos and play posters using Cloud Storage readiness.
 - **Automated Calculations**: Dynamic seat configuration and price calculation logic.
 
+## 📊 Database Structure
+
+```mermaid
+erDiagram
+    User ||--o{ Reservation : creates
+    Reservation ||--|{ Ticket : contains
+    Performance ||--o{ Ticket : sold_at
+    Play ||--o{ Performance : "scheduled as"
+    TheatreHall ||--o{ Performance : hosts
+    Play }|--|{ Genre : categorised_by
+    Play }|--|{ Actor : features
+
+    Play {
+        string title
+        string description
+        image poster
+    }
+    Performance {
+        datetime show_time
+    }
+    Ticket {
+        int row
+        int seat
+    }
+    TheatreHall {
+        string name
+        int rows
+        string seats_config
+    }
+```
+
 ## 🛡️ Security & Protection
 
 This project is built with production-grade security standards:
