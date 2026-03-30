@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import datetime, timedelta, timezone
 
-from .models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
+from theater.models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
 
 
 class TheatreApiTests(APITestCase):

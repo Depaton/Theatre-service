@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Actor, Genre, Play, TheatreHall, Performance, Ticket, Reservation
+from theater.models import Actor, Genre, Play, TheatreHall, Performance, Ticket, Reservation
 
 @admin.register(Actor)
 class ActorAdmin(admin.ModelAdmin):

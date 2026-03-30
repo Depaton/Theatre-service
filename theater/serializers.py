@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
+from theater.models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

@@ -2,9 +2,9 @@ from rest_framework import viewsets, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .permissions import IsAdminOrReadOnly
-from .models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
-from .serializers import (
+from theater.permissions import IsAdminOrReadOnly
+from theater.models import Genre, Actor, Play, TheatreHall, Performance, Reservation, Ticket
+from theater.serializers import (
     GenreSerializer, ActorSerializer, PlaySerializer,
     TheatreHallSerializer, PerformanceSerializer,
     ReservationSerializer, TicketSerializer,

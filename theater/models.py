@@ -2,12 +2,6 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-# class Performance(models.Model):
-#     title = models.CharField(max_length=255)
-#     description = models.TextField()
-#     duration = models.IntegerField()
-
-
 class Genre(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
