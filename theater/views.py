@@ -10,6 +10,7 @@ from theater.serializers import (
     ReservationSerializer, TicketSerializer,
     UserSerializer
 )
+from django.db.models import Count
 
 class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
@@ -42,8 +43,7 @@ class PlayViewSet(viewsets.ModelViewSet):
     serializer_class = PlaySerializer
     permission_classes = [IsAdminOrReadOnly]
 
-from django.db.models import Count
-# ...
+
 class PerformanceViewSet(viewsets.ModelViewSet):
     queryset = Performance.objects.all().select_related('play', 'theatre_hall').annotate(tickets_count=Count('tickets'))
     serializer_class = PerformanceSerializer
